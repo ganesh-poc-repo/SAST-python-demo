@@ -1,0 +1,3 @@
+side = int(input())
+perimeter = 4 * side
+print("Perimeter:", perimeter)

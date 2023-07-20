@@ -1,0 +1,8 @@
+import string
+text = input() ##"The quick brown fox jumps over the lazy dog"
+alphabet = set(string.ascii_lowercase)
+is_pangram = set(text.lower()) >= alphabet
+if is_pangram:
+    print("Pangram")
+else:
+    print("Not a Pangram")

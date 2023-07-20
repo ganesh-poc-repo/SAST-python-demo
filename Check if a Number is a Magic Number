@@ -1,0 +1,8 @@
+def is_magic_number(num):
+    return num == sum(int(digit) for digit in str(num))
+
+num = int(input())
+if is_magic_number(num):
+    print("Magic Number")
+else:
+    print("Not a Magic Number")

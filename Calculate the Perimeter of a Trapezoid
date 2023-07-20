@@ -1,0 +1,6 @@
+base1 = int(input())
+base2 = int(input())
+side1 = int(input())
+side2 = int(input())
+perimeter = base1 + base2 + side1 + side2
+print("Perimeter:", perimeter)

@@ -1,0 +1,2 @@
+a="Srinivasu_Polavarapu"
+a.rindex('r')

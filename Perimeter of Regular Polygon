@@ -1,0 +1,4 @@
+num_sides = int(input())
+side_length = int(input())
+perimeter = num_sides * side_length
+print("Perimeter:", perimeter)

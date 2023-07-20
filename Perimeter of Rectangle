@@ -1,0 +1,4 @@
+length = int(input())
+width = int(input())
+perimeter = 2 * (length + width)
+print("Perimeter:", perimeter)

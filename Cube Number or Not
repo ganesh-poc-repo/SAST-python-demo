@@ -1,0 +1,8 @@
+import math
+num = int(input())
+cube_root = int(math.pow(num, 1/3))
+is_cube = cube_root * cube_root * cube_root == num
+if is_cube:
+    print("Cube Number")
+else:
+    print("Not a Cube Number")

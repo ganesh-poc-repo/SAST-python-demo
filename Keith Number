@@ -1,0 +1,12 @@
+num = 197
+num_str = str(num)
+series = [int(digit) for digit in num_str]
+while series[-1] < num:
+    next_term = sum(series)
+    series.append(next_term)
+    series = series[1:]
+is_keith = series[-1] == num
+if is_keith:
+    print("Keith Number")
+else:
+    print("Not a Keith Number")

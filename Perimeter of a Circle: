@@ -1,0 +1,4 @@
+import math
+radius = int(input())
+perimeter = 2 * math.pi * radius
+print("Perimeter:", perimeter)

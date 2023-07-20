@@ -1,0 +1,8 @@
+import random 
+n=random.randint(1,10)
+usernumner=int(input("Enter a number between 1 to 10(inclusive): "))
+if(n==usernumner):
+  print("Your Guess is Right")
+else: 
+  print("Your Guess is Wrong") 
+print("Random Number: ",n)

@@ -1,0 +1,10 @@
+n=int(input())
+list=list(map(int,input().split()))
+s=0
+for i in list:
+    s+=i
+a=s//n
+if a in list:
+    print(True)
+else:
+    print(False)

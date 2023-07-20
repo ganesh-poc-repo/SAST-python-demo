@@ -1,0 +1,6 @@
+num = "102"
+is_duck = num != "0" and num[0] == "0" and "0" in num[1:]
+if is_duck:
+    print("Duck Number")
+else:
+    print("Not a Duck Number")

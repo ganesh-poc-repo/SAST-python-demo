@@ -1,0 +1,2 @@
+number=int(input("Enter a Long Number: "))
+print("{:,}".format(number))

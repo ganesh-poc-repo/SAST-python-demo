@@ -1,0 +1,6 @@
+num = 36
+is_triangular = any(sum(range(i)) == num for i in range(1, int((2 * num) ** 0.5) + 1))
+if is_triangular:
+    print("Triangular Number")
+else:
+    print("Not a Triangular Number")

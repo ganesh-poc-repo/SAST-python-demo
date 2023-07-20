@@ -1,0 +1,8 @@
+import math
+num = 64
+cube_root = int(num ** (1/3))
+is_dudeney = cube_root ** 3 == num and sum(int(digit) for digit in str(num)) == cube_root
+if is_dudeney:
+    print("Dudeney Number")
+else:
+    print("Not a Dudeney Number")

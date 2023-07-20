@@ -1,0 +1,5 @@
+side1 = float(input("Enter the first side length: "))
+side2 = float(input("Enter the second side length: "))
+side3 = float(input("Enter the third side length: "))
+perimeter = side1 + side2 + side3
+print("Perimeter:", perimeter)

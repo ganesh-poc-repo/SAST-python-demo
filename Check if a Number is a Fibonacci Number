@@ -1,0 +1,11 @@
+def is_fibonacci_number(num):
+    a, b = 0, 1
+    while b < num:
+        a, b = b, a + b
+    return b == num
+
+num = int(input())
+if is_fibonacci_number(num):
+    print("Fibonacci Number")
+else:
+    print("Not a Fibonacci Number")

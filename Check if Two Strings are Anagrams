@@ -1,0 +1,7 @@
+str1 = input() ##"listen"
+str2 = input() ##"silent"
+is_anagram = sorted(str1) == sorted(str2)
+if is_anagram:
+    print("Anagrams")
+else:
+    print("Not Anagrams")
