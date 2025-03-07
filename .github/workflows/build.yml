@@ -1,61 +1,44 @@
 name: SAST-python-demo
 on:
-  branch: [master]
+  push:
+    branches:
+      - master
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-    
-      - name: Setup Python environment
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
-    
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-      # Run build and tests if applicable
-      # - name: Build and test
-      #   run: |
-      #     python setup.py sdist bdist_wheel
-      #     python -m twine upload dist/*
-    
-      # Run library list file
-      - name: List libraries
-        run: |
-          pip list
-    
-      - name: Add SonarQube details
-        uses: sonarqube/sonarqube@v2.1
-        env:
-          SONAR_HOST_URL: 'http://sonarqube.com'
-          SONAR_USERNAME: 'your-username'
-          SONAR_PASSWORD: 'your-password'
-    
-      - name: Add Artifactory details
-        uses: artifactorystore/artifactory@v1
-        env:
-          ARTIFACTORY_HOST: 'your-host.com'
-          ARTIFACTORY_USER: 'your-user'
-          ARTIFACTORY_PASSWORD: 'your-password'
-    
-      - name: SAST Scan
-        uses: sonarqube/sonarcloud@v2.1
-        env:
-          SONAR Host_url: ${{ steps.sonarqube_add_details.outputs.SONAR_HOST_URL }}
-          SONAR_USERNAME: ${{ steps.sonarqube_add_details.outputs.SONAR_USERNAME }}
-          SONAR_PASSWORD: ${{ steps.sonarqube_add_details.outputs.SONAR_PASSWORD }}
-        with:
-          sonarorgkey: 'your-sonarorgkey'
-      # SCA Scan
-      - name: SCA Scan
-        uses: sonarqube/sonarcloud@v2.1
-        env:
-          SONAR_HOST_URL: ${{ steps.sonarqube_add_details.outputs.SONAR_HOST_URL }}
-          SONAR_USERNAME: ${{ steps.sonarqube_add_details.outputs.SONAR_USERNAME }}
-          SONAR_PASSWORD: ${{ steps.sonarqube_add_details.outputs.SONAR_PASSWORD }}
-        with:
-          sonarorgkey: 'your-sonarorgkey'
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Setup Python environment
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Run build and tests
+      if: success()
+      run: |
+        # Add your build command here, e.g. python setup.py sdist bdist_wheel
+    - name: Run library list file
+      run: |
+        # Add your command to list libraries here
+    - name: Set up SonarQube details
+      uses: sonarqube/sonarqube-action@v1
+      with:
+        url: 'your-sonarqube-url'
+        username: 'your-username'
+        password: 'your-password'
+    - name: Add Artifactory details
+      uses: artifactory/artifactory-action@v3
+      with:
+        username: 'your-artifactory-username'
+        password: 'your-artifactory-password'
+        url: 'your-artifactory-url'
+    - name: Add SAST & SCA scan
+      uses: sonarqube/sonar-scanner-action@v1
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
+        SONAR_HOSTURL: ${{ secrets.SONAR_HOSTURL }}
