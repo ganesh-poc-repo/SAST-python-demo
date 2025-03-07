@@ -2,50 +2,45 @@ name: SAST-python-demo
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
+      - master
 jobs:
-  sast:
+  build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ runner.os }}
-      uses: actions/setup-python@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
+    - name: Set up environment
+      uses: azure/az-devops-pipelines@v0.1.0
       with:
-        python-version: '3.x'
+        azureSubscription: 'your_subscription_name'
+        repositoryName: 'your_repository_name'
     - name: Install dependencies
       run: |
-        pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: Run build and tests if applicable
-      env:
-        PIP_VERSION: $(pip --version)
+        python -m pip install --upgrade pip
+        pip install -r pyproject.toml
+    - name: Build and tests (if applicable)
+      if: branches != 'main' && !github.event.project_path
       run: |
-        if [ ${{ runner.os }} == 'windows' ]; then
-          python -m pip install --upgrade pip && pip install -r requirements.txt
-        else
-          pip install --upgrade pip && pip install -r requirements.txt
-        fi
+        python setup.py build
+        python -m unittest discover
     - name: Run library list file
       run: |
         pip freeze > requirements.txt
     - name: Add SonarQube details
-      uses: sonarqube/sonarqube@v2.0.1
+      uses: sonarcloud/sonarcloud-github-action@v0.2.0
       with:
-        sonarorg: 'your-sonarqube-instance'
-        sonaruser: 'your-username'
-        sonarpwd: 'your-password'
+        organization: 'your_organisation_name'
+        token: '${{ secrets.SONARCLOUD_TOKEN }}'
+        projectKey: 'your_project_key'
     - name: Add Artifactory details
-      uses: artifactory/sonatype-artifactor-github-action@v1.0.2
+      uses: artifactorysteam/artifactory-github-action@v1.0.0
       with:
-        username: 'your-username'
-        password: 'your-password'
-        url: 'https://your-artifactory-instance.com'
-    - name: Add SAST & SCA scan 
-      uses: sonarqube/sonarqube-github-action@v1.0.2
+        username: 'your_username'
+        password: ${{ secrets.ARTIFACTORY_PASSWORD }}
+        url: 'https://your_artifactory_url.com'
+    - name: Add SAST & SCA scan
+      uses: sonarcloud/sonarcloud-github-action@v0.2.0
       with:
-        org: 'your-organization'
-        project: 'your-project-name'
+        organization: 'your_organisation_name'
+        token: '${{ secrets.SONARCLOUD_TOKEN }}'
+        projectKey: 'your_project_key'
