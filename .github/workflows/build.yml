@@ -2,14 +2,17 @@ name: SAST-python-demo
 on:
   push:
     branches:
-      - master
+      - main
+  pull_request:
+    branches:
+      - main
+
 jobs:
-  build:
+  sast:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: Setup Python environment
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ runner.os }}
       uses: actions/setup-python@v2
       with:
         python-version: '3.x'
@@ -17,28 +20,32 @@ jobs:
       run: |
         pip install --upgrade pip
         pip install -r requirements.txt
-    - name: Run build and tests
-      if: success()
+    - name: Run build and tests if applicable
+      env:
+        PIP_VERSION: $(pip --version)
       run: |
-        # Add your build command here, e.g. python setup.py sdist bdist_wheel
+        if [ ${{ runner.os }} == 'windows' ]; then
+          python -m pip install --upgrade pip && pip install -r requirements.txt
+        else
+          pip install --upgrade pip && pip install -r requirements.txt
+        fi
     - name: Run library list file
       run: |
-        # Add your command to list libraries here
-    - name: Set up SonarQube details
-      uses: sonarqube/sonarqube-action@v1
+        pip freeze > requirements.txt
+    - name: Add SonarQube details
+      uses: sonarqube/sonarqube@v2.0.1
       with:
-        url: 'your-sonarqube-url'
+        sonarorg: 'your-sonarqube-instance'
+        sonaruser: 'your-username'
+        sonarpwd: 'your-password'
+    - name: Add Artifactory details
+      uses: artifactory/sonatype-artifactor-github-action@v1.0.2
+      with:
         username: 'your-username'
         password: 'your-password'
-    - name: Add Artifactory details
-      uses: artifactory/artifactory-action@v3
+        url: 'https://your-artifactory-instance.com'
+    - name: Add SAST & SCA scan 
+      uses: sonarqube/sonarqube-github-action@v1.0.2
       with:
-        username: 'your-artifactory-username'
-        password: 'your-artifactory-password'
-        url: 'your-artifactory-url'
-    - name: Add SAST & SCA scan
-      uses: sonarqube/sonar-scanner-action@v1
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
-        SONAR_HOSTURL: ${{ secrets.SONAR_HOSTURL }}
+        org: 'your-organization'
+        project: 'your-project-name'
