@@ -1,51 +1,55 @@
 name: SAST-python-demo
 on:
-  branch: master
+  push:
+    branches:
+      - master
 jobs:
-  build-and-test:
+  python_demo:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      - name: Set up environment
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
+    - name: Set up environment variables
+      run: |
+        export PYPROJECT_TOML=pyproject.toml
+        export PYTHONUNBUFFERED=1
+        export DEPENDENCY_FILE=pyproject.toml
 
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pip install --no-cache-dir -r $DEPENDENCY_FILE
 
-      - name: Run build and tests
-        run: |
-          python setup.py sdist bdist_wheel
-          python -m twine upload dist/*
-          pytest -v tests/
+    - name: Run build and tests if applicable
+      shell: bash
+      run: |
+        python -m pytest
 
-      - name: List library dependencies
-        run: |
-          pip freeze > requirements.txt
+    - name: Check library list file
+      run: |
+        if [ ! -f requirements.txt ]; then
+          echo "Library List file not found."
+          exit 1
+        fi
 
-      - name: Add SonarQube details
-        uses: sonarqube/sonarcloud-analysis@v1.0.4
-        with:
-          sonarorg: your-sonarqube-url.com
-          sonarproject-key: your-project-key
-          token: ${{ secrets.SONAR_TOKEN }}
+    - name: Add SonarQube details
+      uses: sonarqube/sonarqube-action@v2
+      with:
+        sonarorg: 'your-sonarqube-url'
+        username: 'your-sonarqube-username'
+        password: 'your-sonarqube-password'
 
-      - name: Add Artifactory details
-        uses: artifactory/gradle-artifactor@v1.0.4
-        with:
-          username: your-username
-          password: ${{ secrets.ARTIFACTORY_PASSWORD }}
-          url: 'your-artifactory-url'
+    - name: Add Artifactory details
+      uses: artifactorystore/artifactory-action@v2
+      with:
+        username: 'your-artifactory-username'
+        password: 'your-artifactory-password'
+        url: 'your-artifactory-url'
 
-      - name: SAST & SCA scan
-        uses: sonarqube/sonarcloud-analysis@v1.0.4
-        with:
-          sonarorg: your-sonarqube-url.com
-          sonarproject-key: your-project-key
-          token: ${{ secrets.SONAR_TOKEN }}
-          analysisMode: full
+    - name: SAST & SCA scan
+      uses: sonarqube/sonar-sast-and-sca-action@v2
+      with:
+        sonarorg: 'your-sonarqube-url'
+        token: ${{ secrets.SONARQUBE_TOKEN }}
+        projectKey: 'your-project-key'
