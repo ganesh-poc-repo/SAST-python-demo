@@ -1,49 +1,50 @@
-Below is an example YAML workflow for your Python repository that uses a `pyproject.toml` dependency file. This workflow assumes you're using Poetry as your package manager.
+Certainly! Below is a sample GitHub Actions YAML workflow file named `build.yml` that satisfies the requirements you've provided for a Python project using a `pyproject.toml` file.
 
-```yml
+```yaml
 name: CI Pipeline
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  build-and-test:
+  build:
+
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
+    - name: Checkout repository
+      uses: actions/checkout@v2
 
-      - name: Set up Python environment
-        uses: actions/setup-python@v3
-        with:
-          python-version: '3.9'
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'  # Specify the Python version you need
 
-      - name: Install dependencies
-        run: |
-          poetry install
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install poetry  # Assuming you are using Poetry for dependency management
+        poetry install
 
-      - name: Run build and tests
-        run: |
-          poetry run python -m pytest --cov=.
-
-      - name: Run linter
-        run: |
-          poetry run flake8 . --count | grep 'Found 1 errors' || exit 0
+    - name: Run tests
+      run: |
+        poetry run pytest  # Adjust this command if you are using a different test framework
 ```
 
-Explanation:
+### Explanation of the YAML file:
+- **name**: The name of the workflow is set to "CI Pipeline".
+- **on**: The workflow triggers on `push` events to the `main` branch and `pull_request` events targeting the `main` branch.
+- **jobs**: Defines the CI job named `build`.
+- **runs-on**: Specifies the environment in which the job will run; in this case, it uses the latest version of Ubuntu.
+- **steps**:
+  - **Checkout**: Uses the `actions/checkout` action to pull the latest code from the repository.
+  - **Set up Python**: Uses the `actions/setup-python` action to set up the specified Python version.
+  - **Install dependencies**: Uses `pip` to upgrade itself and install Poetry. Then it installs the dependencies listed in `pyproject.toml`.
+  - **Run tests**: Executes the test suite using `pytest`, which you may need to adjust if you're using a different testing framework.
 
-*   The `on` section specifies when the workflow should be triggered. In this case, it's triggered on push events to the `main` branch.
-*   The `jobs` section defines a single job called `build-and-test`.
-*   The `runs-on` step specifies that the job will run on an `ubuntu-latest` environment.
-*   The first `step` in the workflow checks out your repository using GitHub Actions' built-in `checkout` action. It uses the `fetch-depth: 0` option to fetch all history, including the most recent commits.
-*   The second step sets up a Python environment using the `setup-python` action. This step can be customized based on the requirements of your project. For this example, it uses the `3.9` version of Python.
-*   The third step installs dependencies using Poetry's `install` command.
-*   The fourth step runs your build and tests using the `poetry run python -m pytest --cov=.` command. This assumes that your project uses Poetry for dependency management and that you have a test suite written in Python. The `--cov=` option is used to enable code coverage reporting, which can help catch bugs.
-*   Finally, the fifth step runs a linter (in this case, flake8) on your repository using the `poetry run flake8 . --count` command. If any errors are found, it will exit with a non-zero status.
-
-This is just an example and may need to be adjusted based on your specific project requirements and the structure of your repositories.
+Make sure to place this `build.yml` file in the `.github/workflows` directory of your repository for it to be recognized by GitHub Actions. Adjust the Python version and testing command according to your project's specific requirements.
