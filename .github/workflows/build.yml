@@ -1,4 +1,5 @@
 name: SAST-python-demo
+
 on:
   push:
     branches:
@@ -8,37 +9,55 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
     - name: Set up Python environment
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: '3.x'
+
     - name: Install dependencies
       run: |
         pip install --upgrade pip
         pip install -r requirements.txt
+
     - name: Run build and tests
+      shell: bash
+      env:
+        TEST_ENV_VARIABLE: ${{ secrets.TEST_ENV_VARIABLE }}
       run: |
-        python setup.py build
-        python setup.py test
-    - name: List library contents
+        python -m pytest
+
+    - name: Analyze library list file
       run: |
-        pip freeze > libraries.txt
-    - name: Add SonarQube details
-      uses: sonarqube/sonarqube-analysis@v1.6
+        pyproject-toml --generate-liblist
+
+    - name: Configure SonarQube
+      uses: sonatype/sonarcloud-github-action@v1.2.0
       with:
-        org: 'your-organisation'
-        project: 'your-project'
-        token: ${{ secrets.SONAR_TOKEN }}
-    - name: Add Artifactory details
-      uses: artifactorysteam/artifactory-deploy@master
+        username: ${{ secrets.SONARCLOUD_USERNAME }}
+        password: ${{ secrets.SONARCLOUD_PASSWORD }}
+        projectKey: your-project-key
+        projectName: your-project-name
+
+    - name: Configure Artifactory
+      uses: jenkinsci/artifactor-github-action@v0.3.2
       with:
-        username: 'your-artifact-username'
+        username: ${{ secrets.ARTIFACTORY_USERNAME }}
         password: ${{ secrets.ARTIFACTORY_PASSWORD }}
-        api-key: 'your-api-key'
-    - name: SAST & SCA scan
-      uses: sonarqube/sonar-scan@v1.6
+        artifactory-url: your-artifactory-url
+
+    - name: Run SAST scan
+      uses: squiz/sast-github-action@v3.0.4
       with:
-        org: 'your-organisation'
-        project: 'your-project'
-        token: ${{ secrets.SONAR_TOKEN }}
+        username: ${{ secrets.SONARCLOUD_USERNAME }}
+        password: ${{ secrets.SONARCLOUD_PASSWORD }}
+        projectKey: your-project-key
+
+    - name: Run SCA scan
+      uses: squiz/sca-github-action@v1.2.0
+      with:
+        username: ${{ secrets.SONARCLOUD_USERNAME }}
+        password: ${{ secrets.SONARCLOUD_PASSWORD }}
+        projectKey: your-project-key
