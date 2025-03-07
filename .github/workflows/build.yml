@@ -1,7 +1,7 @@
-Here is a sample GitHub Actions YAML workflow that automates the CI/CD pipeline for your Python repository:
+Here's a sample YAML workflow that you can use as a starting point for your CI/CD pipeline:
 
 ```yml
-name: Python Package Build and Test
+name: Python Package Build and Deployment
 
 on:
   push:
@@ -9,14 +9,11 @@ on:
       - main
 
 jobs:
-  build-and-test:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
 
       - name: Set up Python environment
         uses: actions/setup-python@v2
@@ -25,61 +22,51 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Build and test package
+      - name: Run build and tests (if applicable)
+        if: branches != 'main'
         run: |
           python setup.py sdist bdist_wheel
           python -m twine upload dist/*
-          pytest tests/
+          python setup.py test
 
-      - name: List installed libraries
-        run: |
-          python -c "import pkg_resources; print('\n'.join(pkg_resources.working_set))"
-
-      - name: Add SonarQube details
-        uses: sonarqube/sonarqube-actions@v1.0.3
-        with:
-          token: ${{ secrets.SONARQUBE_TOKEN }}
-          project-key: ${{ github.event.repository.name }}
-          branch-name: main
-
-      - name: Add Artifactory details
-        uses: artifactory/gh-action@v2.0.0
-        with:
-          token: ${{ secrets.ARTIFACTORY_TOKEN }}
-          username: ${{ github.event.repository.owner.login }}
-          password: ${{ secrets.ARTIFACTORY_PASSWORD }}
-          server-url: ${{ secrets.ARTIFACTORY_URL }}
-          project-name: my-project
-
-      - name: Add SAST & SCA scan
-        uses: sonarqube/sonar-scanner@v3.4.0
-        env:
-          SONARQUBE_HOST: ${{ steps.sonarqube.add_SonarQube_details.outputs['SONARQUBE_HOST'] }}
-          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
-          SONARQUBE_PROJECT_KEY: ${{ steps.sonarqube.add_SonarQube_details.outputs['SONARQUBE_PROJECT_KEY'] }}
-        run: |
-          sonar-scanner -X -s /tmp -ro login=sonar-qube,pass=$SONARQUBE_TOKEN -r https://$SONARQUBE_HOST -l $SONARQUBE_PROJECT_KEY -t py
-
-      - name: Push test results
+      - name: Publish library list file
         uses: actions/upload-artifact@v2
         with:
-          name: sonarqube-test-results
-          path: /tmp/.sonar/
+          path: liblist.txt
+
+      - name: Add sonarqube details
+        uses: sonarqube/sonarqube-action@v1.0.3
+        env:
+          SONARQUBE_HOST: ${{ secrets.SONARQUBE_HOST }}
+          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+          SONARQUBE_USER: ${{ secrets.SONARQUBE_USER }}
+
+      - name: Add artifactory details
+        uses: artifactory/artifactory-action@v1.0.5
+        with:
+          ARTIFACTORY_HOST: ${{ secrets.ARTIFACTORY_HOST }}
+          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+
+      - name: Add SAST & SCA scan
+        uses: sonarqube/sonarqube-action@v1.0.3
+        with:
+          SONARQUBE_HOST: ${{ secrets.SONARQUBE_HOST }}
+          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+          SONARQUBE_USER: ${{ secrets.SONARQUBE_USER }}
+          SONARQUBE_PROJECT_KEY: 'your-project-key'
+          SONARQUBE_REPOSITORY_KEY: 'your-repository-key'
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: your-artifact-name
+          path: dist/*
 ```
 
-This workflow does the following:
+Please note that you'll need to replace the placeholders (`your-project-key`, `your-repository-key`, `dist/` etc.) with your actual values. Also, make sure you've set up Sonarqube and Artifactory as secrets in your GitHub repository settings.
 
-1. Checks out the repository.
-2. Sets up the Python environment.
-3. Installs dependencies using pip.
-4. Builds and tests the package using setup.py and pytest.
-5. Lists installed libraries.
-6. Adds SonarQube details to the workflow, including project key and branch name.
-7. Adds Artifactory details, including username, password, server URL, and project name.
-8. Runs a SAST & SCA scan using sonar-scanner, which uploads test results to SonarQube.
-9. Pushes the test results as an artifact.
-
-Note that you'll need to replace `main` with your branch name if it's not named `main`. Also, make sure to update the `sonarqube/sonarqube-actions` and `artifactory/gh-action` steps with the correct versions and any additional configuration required by your setup.
+Also, I assume that `pyproject.toml` file is used for dependency management so it's not necessary to install dependencies from requirements.txt if you're managing them via pip in pyproject.toml.
