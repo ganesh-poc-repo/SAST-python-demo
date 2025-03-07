@@ -1,4 +1,7 @@
-name: Build & Test
+Here's an example of a GitHub Actions workflow for your Python project:
+
+```yml
+name: Build and Test
 
 on:
   push:
@@ -6,20 +9,73 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python environment
+        uses: actions/setup-python@v2
         with:
           python-version: '3.9'
-      
-      - name: Install dependencies
-        run: pip install -r requirements.txt
 
-      - name: Run Tests
-        run: pytest
-    
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Build and test
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          # Run build command here (if applicable)
+          python setup.py build
+
+          # Run tests
+          pytest tests/
+```
+
+However, since you have `pyproject.toml`, we need to adjust the workflow a bit. We'll use the `python` action and modify it to install dependencies from the `pyproject.toml` file.
+
+Here's an updated version of the GitHub Actions workflow:
+
+```yml
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python environment
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --no-deps .[test]
+
+      - name: Build and test
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          # Run build command here (if applicable)
+          python setup.py build
+
+          # Run tests
+          pytest tests/
+```
+
+Please note that this will install all dependencies from the `[test]` section of your `pyproject.toml` file. If you want to install only test-specific dependencies, make sure they are in the `[tool.testing.dependencies]` or `[tool.setupprovides]` sections.
+
+Also, remember to replace the `# Run build command here (if applicable)` comment with the actual command for building your project if needed.
