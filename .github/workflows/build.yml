@@ -1,4 +1,4 @@
-name: Python Project CI/CD Pipeline
+name: ${GITHUB_REPOSITORY}
 
 on:
   push:
@@ -9,39 +9,47 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
+    - name: Checkout code
       uses: actions/checkout@v2
-    - name: Set up environment
+
+    - name: Set up environment variables
       run: |
-        export PYENV_VERSION=3.9.5
-        pyenv install 3.9.5
-        pyenv global 3.9.5
+        export DEPENDENCY_FILE=pyproject.toml
+        export LANGUAGE=python
+
     - name: Install dependencies
       run: python -m pip install --upgrade pip
       env:
-        PYENV_VERSION: '3.9.5'
+        PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+
     - name: Run build and tests
-      if: succeeds()
+      if: succeeded()
       run: |
-        python setup.py build bdist_wheel
-        python -m twine upload dist/*
-    - name: Install library list
+        python setup.py build
+        pytest
+
+    - name: Run library list file
       run: pip freeze > requirements.txt
+
     - name: Add SonarQube details
-      uses: sonarqube/sonarcloud-actions@v1.6.0
-      with:
-        sonarorg-project-key: ${{ secrets.SONARORG_PROJECT_KEY }}
-        sonarorg username: ${{ secrets.SONARORG_USERNAME }}
-        sonarorg password: ${{ secrets.SONARORG_PASSWORD }}
+      uses: sonarqube/sonarqube-action@v1.3.0
+      env:
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        SONAR Johnson : ${GITHUB_TOKEN}
+        SONAR_USERNAME: ${{ secrets.SONAR_USERNAME }}
+        SONAR_PASSWORD: ${{ secrets.SONAR_PASSWORD }}
+
     - name: Add Artifactory details
-      uses: artifactories/scan-action@v1.2.0
-      with:
-        server_url: ${{ secrets.ARTIFACTORY_SERVER_URL }}
-        username: ${{ secrets.ARTIFACTORY_USERNAME }}
-        password: ${{ secrets.ARTIFACTORY_PASSWORD }}
-    - name: Run SAST & SCA scan
-      uses: artifactories/sast-scan-action@v1.2.0
-      with:
-        server_url: ${{ secrets.ARTIFACTORY_SERVER_URL }}
-        username: ${{ secrets.ARTIFACTORY_USERNAME }}
-        password: ${{ secrets.ARTIFACTORY_PASSWORD }}
+      uses: artifactory/gradle-artifactory-plugin@v1.2.0
+      env:
+        ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
+        ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+        ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+
+    - name: SAST & SCA scan
+      uses: ossf/oss-fhir-scan@v0.5.2
+      env:
+        ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
+        ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+        ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+        SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
