@@ -3,40 +3,42 @@ on:
   push:
     branches:
       - master
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set up environment
-      run: |
-        export PATH=$HOME/.local/bin:$PATH
-        export PYCHARM_HOSTED=0
+    - name: Set up Python environment
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
     - name: Install dependencies
-      run: pip install -r requirements.txt
-    - name: Run build and tests if applicable
       run: |
-        python setup.py sdist bdist_wheel
-        python -m twine upload dist/*
-        # Add your tests here
-    - name: Run library list file
+        pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Run build and tests
       run: |
-        python -c "import pkg_resources; print('\n'.join(pkg_resources.working_set))" > libraries.txt
+        python setup.py build
+        python setup.py test
+    - name: List library contents
+      run: |
+        pip freeze > libraries.txt
     - name: Add SonarQube details
-      uses: sonarqube/sonarqube-action@v1.0.2
+      uses: sonarqube/sonarqube-analysis@v1.6
       with:
-        sonarorg: ${{ secrets.SONARORG }}
-        sonarprojectkey: ${{ secrets.SONARPROJECTKEY }}
-        sonarlogin: ${{ secrets.SONARLOGIN }}
+        org: 'your-organisation'
+        project: 'your-project'
+        token: ${{ secrets.SONAR_TOKEN }}
     - name: Add Artifactory details
-      uses: artifactory/artifactory-action@v1.0.2
+      uses: artifactorysteam/artifactory-deploy@master
       with:
-        username: ${{ secrets.ARTIFACTORY_USERNAME }}
+        username: 'your-artifact-username'
         password: ${{ secrets.ARTIFACTORY_PASSWORD }}
-        url: ${{ secrets.ARTIFACTORY_URL }}
-    - name: Add SAST & SCA scan
-      uses: sonarqube/sonar-sast-scanner-action@v1.4.0
+        api-key: 'your-api-key'
+    - name: SAST & SCA scan
+      uses: sonarqube/sonar-scan@v1.6
       with:
-        sonarorg: ${{ secrets.SONARORG }}
-        sonarprojectkey: ${{ secrets.SONARPROJECTKEY }}
-        sonarlogin: ${{ secrets.SONARLOGIN }}
+        org: 'your-organisation'
+        project: 'your-project'
+        token: ${{ secrets.SONAR_TOKEN }}
