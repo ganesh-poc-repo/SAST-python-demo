@@ -1,4 +1,4 @@
-name: ms-nginx-app
+name: SAST-python-demo
 on:
   push:
     branches:
@@ -8,44 +8,40 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up environment
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up environment variables
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
+          PYPROJECT_TOML: ${{ secrets.PYPROJECT_TOML }}
+          SONARQUBE_URL: ${{ secrets.SONARQUBE_URL }}
+          ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
       - name: Install dependencies
         run: |
-          pip install -r pyproject.toml
-
-      - name: Run build and tests
-        if: succeeds()
+          python -m pip install --upgrade pip
+          pip install -r ${PYPROJECT_TOML['dependencies']}
+      - name: Run build and tests if applicable
         run: |
-          python setup.py build
-          python setup.py test
-
+          python setup.py sdist bdist_wheel
+          python -mtwine upload dist/*
+          pytest
       - name: Run library list file
         run: |
-         pip freeze > requirements.txt
-
+          pip freeze > requirements.txt
       - name: Add SonarQube details
-        env:
-          SONARQUBE_HOST: ${{ secrets.SONARQUBE_HOST }}
-          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
-
+        uses: sonarqube/sonarqube-action@v2.3.0
+        with:
+          token: ${{ secrets.SONARQUBE_TOKEN }}
+          project-key: ${SONARQUBE_PROJECT_KEY}
+          project-name: ${SONARQUBE_PROJECT_NAME}
       - name: Add Artifactory details
-        env:
-          ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
-          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
-
-      - name: Run SAST & SCA scan
-        uses: sonatype/s2-sonarqube-action@v1.0.0
-        env:
-          SONARQUBE_HOST: ${{ secrets.SONARQUBE_HOST }}
-          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
-          ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
-          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+        uses: artifactor/sonarqube-artifactory-action@v1.2.0
+        with:
+          token: ${{ secrets.ARTIFACTORY_TOKEN }}
+          repository-name: python-demo
+          url: ${ARTIFACTORY_URL}
+      - name: Add SAST & SCA scan
+        uses: sonarqube/sonarqube-action@v2.3.0
+        with:
+          token: ${{ secrets.SONARQUBE_TOKEN }}
+          project-key: ${SONARQUBE_PROJECT_KEY}
+          project-name: ${SONARQUBE_PROJECT_NAME}
