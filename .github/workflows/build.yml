@@ -1,6 +1,7 @@
-Here is a sample `build.yml` file for your Python repository:
-```
-name: Python package build and test
+Here is a sample GitHub Actions YAML workflow that meets your requirements:
+
+```yml
+name: Python Package Build and Test
 
 on:
   push:
@@ -11,59 +12,67 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v2
 
       - name: Set up environment
         env:
-          PYTEST_ARGS: '--min-level=3'
+          PYCHARM_HOSTED: "false"
+        run: |
+          export PATH=$HOME/.local/bin:$PATH
 
       - name: Install dependencies
+        shell: bash
         run: |
-          # Update pip
-          pip install --upgrade pip
-
-          # Install dependencies
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run build and tests
+        shell: bash
         run: |
-          pytest --cov= package_name tests/
+          # Run your build script here, e.g.
+          # python build.py
 
-      - name: Generate library list
+      - name: Run library list file
+        shell: bash
         run: |
-          python -m pyproject.toml
+          python library_list.py
 
-      - name: Add SonarQube details
-        env:
-          SONAR_HOST_URL: https://sonarqube.example.com
-          SONAR_USERNAME: sonarqube-user
-          SONAR_PASSWORD: sonarqube-password
-          SONAR_PROJECT_KEY: package_name
-          SONAR_PROJECT_NAME: Package Name
+      - name: Add sonarqube details
+        uses: sonarqube/sonarqube-action@v1.3.4
+        with:
+          token: ${{ secrets.SONARQUBE_TOKEN }}
+          project-key: "your-project-key"
+          project-name: "Your Project Name"
 
-      - name: Add Artifactory details
-        env:
-          ARTIFACTORY_URL: https://artifactory.example.com
-          ARTIFACTORY_USERNAME: artifactory-user
-          ARTIFACTORY_PASSWORD: artifactory-password
-          ARTIFACTORY_API_TOKEN: ${{ secrets.ARTIFACTORY_API_TOKEN }}
+      - name: Add artifactory details
+        uses: artifactory/artifactory-github-actions-action@v1.2.0
+        with:
+          token: ${{ secrets.ARTIFACTORY_TOKEN }}
+          username: "your-username"
+          password: ${{ secrets.ARTIFACTORY_PASSWORD }}
 
-      - name: Run SAST & SCA scan
-        uses: sonarqube/sonarqube-analysis@v2.0.5
-        env:
-          SONAR_HOST_URL: https://sonarqube.example.com
-          SONAR_USERNAME: sonarqube-user
-          SONAR_PASSWORD: sonarqube-password
-          SONAR_PROJECT_KEY: package_name
-          SONAR_PROJECT_NAME: Package Name
+      - name: Run SAST scan
+        uses: sonarqube/sonarqube-action@v1.3.4
+        with:
+          token: ${{ secrets.SONARQUBE_TOKEN }}
+          project-key: "your-project-key"
+          project-name: "Your Project Name"
+
+      - name: Run SCA scan
+        uses: sonarqube/sonarqube-action@v1.3.4
+        with:
+          token: ${{ secrets.SONARQUBE_TOKEN }}
+          project-key: "your-project-key"
+          project-name: "Your Project Name"
 ```
-This workflow assumes the following:
 
-*   You have a `requirements.txt` file listing your dependencies.
-*   Your project uses pytest for testing, and you want to run it with coverage reporting. Adjust the `pytest` command accordingly if needed.
-*   You want to generate a library list using the `pyproject.toml` file's built-in functionality. If your project doesn't use this feature, remove or comment out this step.
-*   Your SonarQube instance is running at `https://sonarqube.example.com`, and you have credentials set up for it. Replace these with your actual credentials.
-*   Your Artifactory instance is running at `https://artifactory.example.com`, and you have credentials set up for it, including an API token stored as a secret named `ARTIFACTORY_API_TOKEN`.
+Please replace `"your-project-key"`, `"your-username"`, and `"your-password"` with your actual Sonarqube, Artifactory, and GitHub personal access token details respectively. Also, ensure that the `requirements.txt` file is present in your repository.
 
-Adjust this workflow according to your project's specific requirements and dependencies.
+This workflow uses the following actions:
+
+1. `actions/checkout@v2`: to checkout the repository.
+2. `sonarqube/sonarqube-action@v1.3.4`: for SAST and SCA scan, as well as adding Sonarqube details.
+3. `artifactory/artifactory-github-actions-action@v1.2.0`: to add Artifactory details.
+
+Note: Always replace your actual credentials with environment variables (`{{ secrets.SONARQUBE_TOKEN }}`, etc.) for better security and organization.
