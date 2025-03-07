@@ -1,55 +1,52 @@
-name: SAST-python-demo
+name: ms-nginx-app
 on:
   push:
     branches:
       - master
 jobs:
-  python_demo:
+  build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up environment variables
-      run: |
-        export PYPROJECT_TOML=pyproject.toml
-        export PYTHONUNBUFFERED=1
-        export DEPENDENCY_FILE=pyproject.toml
+      - name: Set up environment
+        uses: appleboy/env-install@v1
+        with:
+          env_file: .env
 
-    - name: Install dependencies
-      shell: bash
-      run: |
-        pip install --no-cache-dir -r $DEPENDENCY_FILE
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Run build and tests if applicable
-      shell: bash
-      run: |
-        python -m pytest
+      - name: Run build and tests
+        run: |
+          python setup.py sdist bdist_wheel
+          python setup.py test
 
-    - name: Check library list file
-      run: |
-        if [ ! -f requirements.txt ]; then
-          echo "Library List file not found."
-          exit 1
-        fi
+      - name: List installed libraries
+        run: |
+          pip freeze > requirements.txt
 
-    - name: Add SonarQube details
-      uses: sonarqube/sonarqube-action@v2
-      with:
-        sonarorg: 'your-sonarqube-url'
-        username: 'your-sonarqube-username'
-        password: 'your-sonarqube-password'
+      - name: Add SonarQube details
+        uses: sonarqube/sonarqube-action@v1.2.0
+        env:
+          SONAR_HOST_URL: 'http://localhost:9000'
+          SONAR_TOKEN: '${{ secrets.SONAR_TOKEN }}'
 
-    - name: Add Artifactory details
-      uses: artifactorystore/artifactory-action@v2
-      with:
-        username: 'your-artifactory-username'
-        password: 'your-artifactory-password'
-        url: 'your-artifactory-url'
+      - name: Add Artifactory details
+        uses: artifactory/artifactory-action@v3.7.0
+        with:
+          api_token: '${{ secrets.ARTIFACTORY_API_TOKEN }}'
+          server_url: 'https://your-artifactory-server.com'
 
-    - name: SAST & SCA scan
-      uses: sonarqube/sonar-sast-and-sca-action@v2
-      with:
-        sonarorg: 'your-sonarqube-url'
-        token: ${{ secrets.SONARQUBE_TOKEN }}
-        projectKey: 'your-project-key'
+      - name: Run SAST scan
+        uses: squishy-sec/sast-action@v4.1.0
+        env:
+          SAST_TOKEN: '${{ secrets.SAST_TOKEN }}'
+
+      - name: Run SCA scan
+        uses: squishy-sec/sca-action@v2.2.0
+        env:
+          SCA_TOKEN: '${{ secrets.SCA_TOKEN }}'
