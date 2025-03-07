@@ -2,54 +2,41 @@ name: SAST-python-demo
 on:
   push:
     branches:
-      - master
+      - main
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Set up Python environment
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Run build and tests (if applicable)
-        if: succeeds()
-        run: |
-          python setup.py sdist
-          python setup.py test
-      - name: Run library list file
-        run: |
-          pip freeze > requirements.txt
-      - name: Add SonarQube details
-        uses: sonarqube/sonarcloud@master
-        with:
-          token: ${{ secrets.SONARCLOUD_TOKEN }}
-          org: your-organization
-          project: your-project
-          repo: python-demo
-      - name: Add Artifactory details
-        uses: artifactory/gradle-action@v1.5.0
-        with:
-          serverUrl: 'your-artifactory-url'
-          username: 'your-username'
-          password: ${{ secrets.ARTIFACTORY_PASSWORD }}
-          credentialsId: artifactory-credentials
-      - name: Add SAST & SCA scan
-        uses: sonarqube/sonarcloud@master
-        with:
-          token: ${{ secrets.SONARCLOUD_TOKEN }}
-          org: your-organization
-          project: python-demo
-          repo: python-demo
-          vcs-type: Git
-          script: |
-            # Add a comment to describe the SAST & SCA scan
-            sonarcloud:
-              script: |
-                echo "Running SonarQube analysis..."
-                sonarcloud analyze --token $SONARCLOUD_TOKEN --properties @sonarqube/python-saas.properties --vcs-type Git --vcs-path .
+    - uses: actions/checkout@v2
+    - name: Set up Python environment
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Run build and tests
+      if: succeeds()
+      run: |
+        # your build and test commands here
+    - name: List installed libraries
+      run: |
+        pip freeze > requirements.txt
+    - name: Add SonarQube details
+      uses: sonarqube-action@v1
+      with:
+        credentials_token: ${{ secrets.SONAR_TOKEN }}
+        sonarhost: 'http://sonarqube.example.com'
+        sonarprojectkey: 'your-project-key'
+    - name: Add Artifactory details
+      uses: artifactory-action@v2
+      with:
+        token: ${{ secrets.ARTIFACTORY_TOKEN }}
+        url: 'http://artifactory.example.com'
+    - name: SAST & SCA scan
+      uses: squilliam/sonar-sast-scanner@v1
+      env:
+        SONAR_HOST URL: sonarhost
+        SONAR_USERNAME: your-sonar-username
+        SONAR_PASSWORD: your-sonar-password
