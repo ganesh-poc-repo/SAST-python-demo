@@ -1,7 +1,5 @@
-Here is a sample GitHub Actions YAML workflow that meets your requirements:
-
 ```yml
-name: Python Package Build and Test
+name: Python package
 
 on:
   push:
@@ -9,70 +7,48 @@ on:
       - main
 
 jobs:
-  build-and-test:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up environment
-        env:
-          PYCHARM_HOSTED: "false"
-        run: |
-          export PATH=$HOME/.local/bin:$PATH
+      - name: Set up Python environment
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
 
       - name: Install dependencies
-        shell: bash
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run build and tests
-        shell: bash
+      - name: Build and run tests
         run: |
-          # Run your build script here, e.g.
-          # python build.py
+          python setup.py sdist bdist_wheel
+          python -m twine upload dist/*
+          # Add your test commands here if applicable
 
-      - name: Run library list file
-        shell: bash
+      - name: List library files
         run: |
-          python library_list.py
+          pip freeze > requirements.txt
 
-      - name: Add sonarqube details
-        uses: sonarqube/sonarqube-action@v1.3.4
+      - name: Configure SonarQube
+        uses: sonarqube/sonarcloud-action@v1.3.0
         with:
-          token: ${{ secrets.SONARQUBE_TOKEN }}
-          project-key: "your-project-key"
-          project-name: "Your Project Name"
+          sonarorg-host: 'your-sonarorg-host'
+          sonarorg-token: 'your-sonarorg-token'
 
-      - name: Add artifactory details
-        uses: artifactory/artifactory-github-actions-action@v1.2.0
-        with:
-          token: ${{ secrets.ARTIFACTORY_TOKEN }}
-          username: "your-username"
-          password: ${{ secrets.ARTIFACTORY_PASSWORD }}
+      - name: Configure Artifactory
+        uses: artifactory/gradle-action@v2.0.0
+        env:
+          ARTIFACTORY_HOST: 'your-artifactory-host'
+          ARTIFACTORY_USERNAME: 'your-artifactory-username'
+          ARTIFACTORY_PASSWORD: 'your-artifactory-password'
 
-      - name: Run SAST scan
-        uses: sonarqube/sonarqube-action@v1.3.4
-        with:
-          token: ${{ secrets.SONARQUBE_TOKEN }}
-          project-key: "your-project-key"
-          project-name: "Your Project Name"
-
-      - name: Run SCA scan
-        uses: sonarqube/sonarqube-action@v1.3.4
-        with:
-          token: ${{ secrets.SONARQUBE_TOKEN }}
-          project-key: "your-project-key"
-          project-name: "Your Project Name"
+      - name: SAST & SCA scan
+        uses: sonarcloud/sonar-scanner-action@v2.0.0
+        env:
+          SONARORG_HOST_URL: 'https://your-sonarorg-host'
+          SONARCLOUD_TOKEN: 'your-sonarcloud-token'
 ```
-
-Please replace `"your-project-key"`, `"your-username"`, and `"your-password"` with your actual Sonarqube, Artifactory, and GitHub personal access token details respectively. Also, ensure that the `requirements.txt` file is present in your repository.
-
-This workflow uses the following actions:
-
-1. `actions/checkout@v2`: to checkout the repository.
-2. `sonarqube/sonarqube-action@v1.3.4`: for SAST and SCA scan, as well as adding Sonarqube details.
-3. `artifactory/artifactory-github-actions-action@v1.2.0`: to add Artifactory details.
-
-Note: Always replace your actual credentials with environment variables (`{{ secrets.SONARQUBE_TOKEN }}`, etc.) for better security and organization.
