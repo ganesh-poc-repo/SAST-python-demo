@@ -1,47 +1,45 @@
 name: SAST-python-demo
+
 on:
   push:
     branches:
       - master
 
 jobs:
-  build:
+  sast-python-demo:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - name: Set up environment variables
-        env:
-          PYPROJECT_TOML: ${{ secrets.PYPROJECT_TOML }}
-          SONARQUBE_URL: ${{ secrets.SONARQUBE_URL }}
-          ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r ${PYPROJECT_TOML['dependencies']}
-      - name: Run build and tests if applicable
-        run: |
-          python setup.py sdist bdist_wheel
-          python -mtwine upload dist/*
-          pytest
-      - name: Run library list file
-        run: |
-          pip freeze > requirements.txt
-      - name: Add SonarQube details
-        uses: sonarqube/sonarqube-action@v2.3.0
-        with:
-          token: ${{ secrets.SONARQUBE_TOKEN }}
-          project-key: ${SONARQUBE_PROJECT_KEY}
-          project-name: ${SONARQUBE_PROJECT_NAME}
-      - name: Add Artifactory details
-        uses: artifactor/sonarqube-artifactory-action@v1.2.0
-        with:
-          token: ${{ secrets.ARTIFACTORY_TOKEN }}
-          repository-name: python-demo
-          url: ${ARTIFACTORY_URL}
-      - name: Add SAST & SCA scan
-        uses: sonarqube/sonarqube-action@v2.3.0
-        with:
-          token: ${{ secrets.SONARQUBE_TOKEN }}
-          project-key: ${SONARQUBE_PROJECT_KEY}
-          project-name: ${SONARQUBE_PROJECT_NAME}
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up the required environment
+      run: |
+        export DEPENV_FILE=.env
+
+    - name: Install dependencies
+      run: pip install --no-cache-dir -r .depenv
+
+    - name: Run build and tests
+      run: |
+        python setup.py sdist bdist_wheel
+
+    - name: Create library list file
+      run: |
+        pip freeze > requirements.txt
+
+    - name: Add SonarQube details
+      uses: sonarqube/sonar-qube-action@v1.6.0
+      with:
+        token: ${{ secrets.SONAR_TOKEN }}
+        project-name: 'your-project-name'
+        project-key: 'your-project-key'
+
+    - name: Add Artifactory details
+      uses: artifactory/artifactory-deploy@v2.12.0
+
+    - name: SAST & SCA scan
+      uses: sonarcloud/sonarcloud-action@v1.4.0
+      with:
+        token: ${{ secrets.SONAR_TOKEN }}
+        project-name: 'your-project-name'
+        project-key: 'your-project-key'
