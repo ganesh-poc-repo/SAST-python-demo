@@ -1,7 +1,6 @@
-Here is a sample GitHub Actions YAML workflow for the given repository details:
-
-```yml
-name: Python CI/CD Pipeline
+Here is a sample `build.yml` file for your Python repository:
+```
+name: Python package build and test
 
 on:
   push:
@@ -16,55 +15,55 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up environment
-        run: |
-          # Install required dependencies
-          pip install --upgrade pip
-          pip install --upgrade wheel
+        env:
+          PYTEST_ARGS: '--min-level=3'
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade -r requirements.txt
+          # Update pip
+          pip install --upgrade pip
 
-      - name: Run build and tests (if applicable)
+          # Install dependencies
+          pip install -r requirements.txt
+
+      - name: Run build and tests
         run: |
-          python setup.py sdist bdist_wheel
-          python -m twine upload dist/*
-          # Comment this line if you don't have pytest installed
-          # python -m pytest tests/
+          pytest --cov= package_name tests/
 
-      - name: Generate library list file
+      - name: Generate library list
         run: |
-          pip freeze > requirements.txt
+          python -m pyproject.toml
 
-      - name: Add sonarqube details
+      - name: Add SonarQube details
         env:
-          SONARQUBE_URL: https://sonarqube.com
-          SONARQUBE_TOKEN: $(echo ${{ secrets.SONARQUBE_TOKEN }})"
-          SONARQUBE_PROJECT_KEY: your_project_key"
+          SONAR_HOST_URL: https://sonarqube.example.com
+          SONAR_USERNAME: sonarqube-user
+          SONAR_PASSWORD: sonarqube-password
+          SONAR_PROJECT_KEY: package_name
+          SONAR_PROJECT_NAME: Package Name
 
       - name: Add Artifactory details
         env:
-          ARTIFACTORY_URL: 'https://your-artifactory-url.com'
-          ARTIFACTORY_USERNAME: "your_artifactory_username"
-          ARTIFACTORY_PASSWORD: $(echo ${{ secrets.ARTIFACTORY_PASSWORD }})"
+          ARTIFACTORY_URL: https://artifactory.example.com
+          ARTIFACTORY_USERNAME: artifactory-user
+          ARTIFACTORY_PASSWORD: artifactory-password
+          ARTIFACTORY_API_TOKEN: ${{ secrets.ARTIFACTORY_API_TOKEN }}
 
-      - name: Run SAST scan
+      - name: Run SAST & SCA scan
+        uses: sonarqube/sonarqube-analysis@v2.0.5
         env:
-          SONARQUBE_TOKEN: $(echo ${{ secrets.SONARQUBE_TOKEN }})"
-          ARTIFACTORY_URL: 'https://your-artifactory-url.com'
-          ARTIFACTORY_USERNAME: "your_artifactory_username"
-          ARTIFACTORY_PASSWORD: $(echo ${{ secrets.ARTIFACTORY_PASSWORD }})"
-        run: |
-          sonarqube -X org/your-organization -X token=$SONARQUBE_TOKEN -X projectKey=your_project_key
+          SONAR_HOST_URL: https://sonarqube.example.com
+          SONAR_USERNAME: sonarqube-user
+          SONAR_PASSWORD: sonarqube-password
+          SONAR_PROJECT_KEY: package_name
+          SONAR_PROJECT_NAME: Package Name
 ```
+This workflow assumes the following:
 
-Note that you need to replace the placeholders with your actual values:
+*   You have a `requirements.txt` file listing your dependencies.
+*   Your project uses pytest for testing, and you want to run it with coverage reporting. Adjust the `pytest` command accordingly if needed.
+*   You want to generate a library list using the `pyproject.toml` file's built-in functionality. If your project doesn't use this feature, remove or comment out this step.
+*   Your SonarQube instance is running at `https://sonarqube.example.com`, and you have credentials set up for it. Replace these with your actual credentials.
+*   Your Artifactory instance is running at `https://artifactory.example.com`, and you have credentials set up for it, including an API token stored as a secret named `ARTIFACTORY_API_TOKEN`.
 
-*   `main` is the branch where this workflow will be triggered.
-*   Replace `"https://sonarqube.com"`, `"$(echo ${{ secrets.SONARQUBE_TOKEN }})"`, `"your_project_key"`, `"https://your-artifactory-url.com"`, `"your_artifactory_username"` and `"$(echo ${{ secrets.ARTIFACTORY_PASSWORD }})"` with your actual SonarQube URL, token, project key, Artifactory URL, username and password respectively.
-
-Also, remember to update the `requirements.txt` file by running `pip freeze > requirements.txt`. 
-
-Make sure that all the dependencies are installed before trying to install any other package. 
-
-Please let me know if you need further modifications.
+Adjust this workflow according to your project's specific requirements and dependencies.
