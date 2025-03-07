@@ -7,40 +7,36 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
     - name: Set up environment
-      uses: azure/az-devops-pipelines@v0.1.0
-      with:
-        azureSubscription: 'your_subscription_name'
-        repositoryName: 'your_repository_name'
+      run: |
+        export PATH=$HOME/.local/bin:$PATH
+        export PYCHARM_HOSTED=0
     - name: Install dependencies
+      run: pip install -r requirements.txt
+    - name: Run build and tests if applicable
       run: |
-        python -m pip install --upgrade pip
-        pip install -r pyproject.toml
-    - name: Build and tests (if applicable)
-      if: branches != 'main' && !github.event.project_path
-      run: |
-        python setup.py build
-        python -m unittest discover
+        python setup.py sdist bdist_wheel
+        python -m twine upload dist/*
+        # Add your tests here
     - name: Run library list file
       run: |
-        pip freeze > requirements.txt
+        python -c "import pkg_resources; print('\n'.join(pkg_resources.working_set))" > libraries.txt
     - name: Add SonarQube details
-      uses: sonarcloud/sonarcloud-github-action@v0.2.0
+      uses: sonarqube/sonarqube-action@v1.0.2
       with:
-        organization: 'your_organisation_name'
-        token: '${{ secrets.SONARCLOUD_TOKEN }}'
-        projectKey: 'your_project_key'
+        sonarorg: ${{ secrets.SONARORG }}
+        sonarprojectkey: ${{ secrets.SONARPROJECTKEY }}
+        sonarlogin: ${{ secrets.SONARLOGIN }}
     - name: Add Artifactory details
-      uses: artifactorysteam/artifactory-github-action@v1.0.0
+      uses: artifactory/artifactory-action@v1.0.2
       with:
-        username: 'your_username'
+        username: ${{ secrets.ARTIFACTORY_USERNAME }}
         password: ${{ secrets.ARTIFACTORY_PASSWORD }}
-        url: 'https://your_artifactory_url.com'
+        url: ${{ secrets.ARTIFACTORY_URL }}
     - name: Add SAST & SCA scan
-      uses: sonarcloud/sonarcloud-github-action@v0.2.0
+      uses: sonarqube/sonar-sast-scanner-action@v1.4.0
       with:
-        organization: 'your_organisation_name'
-        token: '${{ secrets.SONARCLOUD_TOKEN }}'
-        projectKey: 'your_project_key'
+        sonarorg: ${{ secrets.SONARORG }}
+        sonarprojectkey: ${{ secrets.SONARPROJECTKEY }}
+        sonarlogin: ${{ secrets.SONARLOGIN }}
