@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,42 +12,40 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Set up environment
-        uses: appleboy/env-install@v1
-        with:
-          env_file: .env
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r pyproject.toml
 
       - name: Run build and tests
+        if: succeeds()
         run: |
-          python setup.py sdist bdist_wheel
+          python setup.py build
           python setup.py test
 
-      - name: List installed libraries
+      - name: Run library list file
         run: |
-          pip freeze > requirements.txt
+         pip freeze > requirements.txt
 
       - name: Add SonarQube details
-        uses: sonarqube/sonarqube-action@v1.2.0
         env:
-          SONAR_HOST_URL: 'http://localhost:9000'
-          SONAR_TOKEN: '${{ secrets.SONAR_TOKEN }}'
+          SONARQUBE_HOST: ${{ secrets.SONARQUBE_HOST }}
+          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
 
       - name: Add Artifactory details
-        uses: artifactory/artifactory-action@v3.7.0
-        with:
-          api_token: '${{ secrets.ARTIFACTORY_API_TOKEN }}'
-          server_url: 'https://your-artifactory-server.com'
-
-      - name: Run SAST scan
-        uses: squishy-sec/sast-action@v4.1.0
         env:
-          SAST_TOKEN: '${{ secrets.SAST_TOKEN }}'
+          ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
+          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
 
-      - name: Run SCA scan
-        uses: squishy-sec/sca-action@v2.2.0
+      - name: Run SAST & SCA scan
+        uses: sonatype/s2-sonarqube-action@v1.0.0
         env:
-          SCA_TOKEN: '${{ secrets.SCA_TOKEN }}'
+          SONARQUBE_HOST: ${{ secrets.SONARQUBE_HOST }}
+          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
+          ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
+          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
+          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
