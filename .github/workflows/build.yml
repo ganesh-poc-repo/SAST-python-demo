@@ -1,42 +1,61 @@
 name: SAST-python-demo
 on:
-  push:
-    branches:
-      - main
+  branch: [master]
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python environment
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-    - name: Install dependencies
-      run: |
-        pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: Run build and tests
-      if: succeeds()
-      run: |
-        # your build and test commands here
-    - name: List installed libraries
-      run: |
-        pip freeze > requirements.txt
-    - name: Add SonarQube details
-      uses: sonarqube-action@v1
-      with:
-        credentials_token: ${{ secrets.SONAR_TOKEN }}
-        sonarhost: 'http://sonarqube.example.com'
-        sonarprojectkey: 'your-project-key'
-    - name: Add Artifactory details
-      uses: artifactory-action@v2
-      with:
-        token: ${{ secrets.ARTIFACTORY_TOKEN }}
-        url: 'http://artifactory.example.com'
-    - name: SAST & SCA scan
-      uses: squilliam/sonar-sast-scanner@v1
-      env:
-        SONAR_HOST URL: sonarhost
-        SONAR_USERNAME: your-sonar-username
-        SONAR_PASSWORD: your-sonar-password
+      - name: Checkout repository
+        uses: actions/checkout@v2
+    
+      - name: Setup Python environment
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+    
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      # Run build and tests if applicable
+      # - name: Build and test
+      #   run: |
+      #     python setup.py sdist bdist_wheel
+      #     python -m twine upload dist/*
+    
+      # Run library list file
+      - name: List libraries
+        run: |
+          pip list
+    
+      - name: Add SonarQube details
+        uses: sonarqube/sonarqube@v2.1
+        env:
+          SONAR_HOST_URL: 'http://sonarqube.com'
+          SONAR_USERNAME: 'your-username'
+          SONAR_PASSWORD: 'your-password'
+    
+      - name: Add Artifactory details
+        uses: artifactorystore/artifactory@v1
+        env:
+          ARTIFACTORY_HOST: 'your-host.com'
+          ARTIFACTORY_USER: 'your-user'
+          ARTIFACTORY_PASSWORD: 'your-password'
+    
+      - name: SAST Scan
+        uses: sonarqube/sonarcloud@v2.1
+        env:
+          SONAR Host_url: ${{ steps.sonarqube_add_details.outputs.SONAR_HOST_URL }}
+          SONAR_USERNAME: ${{ steps.sonarqube_add_details.outputs.SONAR_USERNAME }}
+          SONAR_PASSWORD: ${{ steps.sonarqube_add_details.outputs.SONAR_PASSWORD }}
+        with:
+          sonarorgkey: 'your-sonarorgkey'
+      # SCA Scan
+      - name: SCA Scan
+        uses: sonarqube/sonarcloud@v2.1
+        env:
+          SONAR_HOST_URL: ${{ steps.sonarqube_add_details.outputs.SONAR_HOST_URL }}
+          SONAR_USERNAME: ${{ steps.sonarqube_add_details.outputs.SONAR_USERNAME }}
+          SONAR_PASSWORD: ${{ steps.sonarqube_add_details.outputs.SONAR_PASSWORD }}
+        with:
+          sonarorgkey: 'your-sonarorgkey'
