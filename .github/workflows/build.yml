@@ -1,41 +1,55 @@
 name: SAST-python-demo
 on:
   push:
-    branches: [ main ]
- jobs:
+    branches:
+      - master
+jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Set up environment variables
-        env:
-          PYPROJECT_TOML: ${{ secrets.PYPROJECT_TOML }}
-          SONARQUBE_URL: ${{ secrets.SONARQUBE_URL }}
-          ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Set up Python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r pyproject.toml[dev]
-      - name: Run build and tests if applicable
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run build and tests (if applicable)
+        if: succeeds()
         run: |
-          python setup.py sdist bdist_wheel
-          python -m twine upload dist/*
-      - name: Generate library list
+          python setup.py sdist
+          python setup.py test
+      - name: Run library list file
         run: |
           pip freeze > requirements.txt
       - name: Add SonarQube details
-        uses: sonarqube/sonarqube-action@v1.0.0
-        env:
-          SONARQUBE_URL: ${{ secrets.SONARQUBE_URL }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        uses: sonarqube/sonarcloud@master
+        with:
+          token: ${{ secrets.SONARCLOUD_TOKEN }}
+          org: your-organization
+          project: your-project
+          repo: python-demo
       - name: Add Artifactory details
-        uses: artifactory/api-token@v2
-        env:
-          ARTIFACTORY_URL: ${{ secrets.ARTIFACTORY_URL }}
-          API_KEY: ${{ secrets.API_KEY }}
-      - name: Run SAST & SCA scan
-        uses: sonarqube/sonarcloud-action@v1.0.0
-        env:
-          SONARQUBE_URL: ${{ secrets.SONARQUBE_URL }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        uses: artifactory/gradle-action@v1.5.0
+        with:
+          serverUrl: 'your-artifactory-url'
+          username: 'your-username'
+          password: ${{ secrets.ARTIFACTORY_PASSWORD }}
+          credentialsId: artifactory-credentials
+      - name: Add SAST & SCA scan
+        uses: sonarqube/sonarcloud@master
+        with:
+          token: ${{ secrets.SONARCLOUD_TOKEN }}
+          org: your-organization
+          project: python-demo
+          repo: python-demo
+          vcs-type: Git
+          script: |
+            # Add a comment to describe the SAST & SCA scan
+            sonarcloud:
+              script: |
+                echo "Running SonarQube analysis..."
+                sonarcloud analyze --token $SONARCLOUD_TOKEN --properties @sonarqube/python-saas.properties --vcs-type Git --vcs-path .
