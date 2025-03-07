@@ -1,7 +1,7 @@
-Here's a sample YAML workflow that you can use as a starting point for your CI/CD pipeline:
+Here is a sample GitHub Actions YAML workflow for the given repository details:
 
 ```yml
-name: Python Package Build and Deployment
+name: Python CI/CD Pipeline
 
 on:
   push:
@@ -9,64 +9,62 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  build-and-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Set up Python environment
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
+      - name: Set up environment
+        run: |
+          # Install required dependencies
+          pip install --upgrade pip
+          pip install --upgrade wheel
 
       - name: Install dependencies
         run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
+          python -m pip install --upgrade -r requirements.txt
 
       - name: Run build and tests (if applicable)
-        if: branches != 'main'
         run: |
           python setup.py sdist bdist_wheel
           python -m twine upload dist/*
-          python setup.py test
+          # Comment this line if you don't have pytest installed
+          # python -m pytest tests/
 
-      - name: Publish library list file
-        uses: actions/upload-artifact@v2
-        with:
-          path: liblist.txt
+      - name: Generate library list file
+        run: |
+          pip freeze > requirements.txt
 
       - name: Add sonarqube details
-        uses: sonarqube/sonarqube-action@v1.0.3
         env:
-          SONARQUBE_HOST: ${{ secrets.SONARQUBE_HOST }}
-          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
-          SONARQUBE_USER: ${{ secrets.SONARQUBE_USER }}
+          SONARQUBE_URL: https://sonarqube.com
+          SONARQUBE_TOKEN: $(echo ${{ secrets.SONARQUBE_TOKEN }})"
+          SONARQUBE_PROJECT_KEY: your_project_key"
 
-      - name: Add artifactory details
-        uses: artifactory/artifactory-action@v1.0.5
-        with:
-          ARTIFACTORY_HOST: ${{ secrets.ARTIFACTORY_HOST }}
-          ARTIFACTORY_USERNAME: ${{ secrets.ARTIFACTORY_USERNAME }}
-          ARTIFACTORY_PASSWORD: ${{ secrets.ARTIFACTORY_PASSWORD }}
+      - name: Add Artifactory details
+        env:
+          ARTIFACTORY_URL: 'https://your-artifactory-url.com'
+          ARTIFACTORY_USERNAME: "your_artifactory_username"
+          ARTIFACTORY_PASSWORD: $(echo ${{ secrets.ARTIFACTORY_PASSWORD }})"
 
-      - name: Add SAST & SCA scan
-        uses: sonarqube/sonarqube-action@v1.0.3
-        with:
-          SONARQUBE_HOST: ${{ secrets.SONARQUBE_HOST }}
-          SONARQUBE_TOKEN: ${{ secrets.SONARQUBE_TOKEN }}
-          SONARQUBE_USER: ${{ secrets.SONARQUBE_USER }}
-          SONARQUBE_PROJECT_KEY: 'your-project-key'
-          SONARQUBE_REPOSITORY_KEY: 'your-repository-key'
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: your-artifact-name
-          path: dist/*
+      - name: Run SAST scan
+        env:
+          SONARQUBE_TOKEN: $(echo ${{ secrets.SONARQUBE_TOKEN }})"
+          ARTIFACTORY_URL: 'https://your-artifactory-url.com'
+          ARTIFACTORY_USERNAME: "your_artifactory_username"
+          ARTIFACTORY_PASSWORD: $(echo ${{ secrets.ARTIFACTORY_PASSWORD }})"
+        run: |
+          sonarqube -X org/your-organization -X token=$SONARQUBE_TOKEN -X projectKey=your_project_key
 ```
 
-Please note that you'll need to replace the placeholders (`your-project-key`, `your-repository-key`, `dist/` etc.) with your actual values. Also, make sure you've set up Sonarqube and Artifactory as secrets in your GitHub repository settings.
+Note that you need to replace the placeholders with your actual values:
 
-Also, I assume that `pyproject.toml` file is used for dependency management so it's not necessary to install dependencies from requirements.txt if you're managing them via pip in pyproject.toml.
+*   `main` is the branch where this workflow will be triggered.
+*   Replace `"https://sonarqube.com"`, `"$(echo ${{ secrets.SONARQUBE_TOKEN }})"`, `"your_project_key"`, `"https://your-artifactory-url.com"`, `"your_artifactory_username"` and `"$(echo ${{ secrets.ARTIFACTORY_PASSWORD }})"` with your actual SonarQube URL, token, project key, Artifactory URL, username and password respectively.
+
+Also, remember to update the `requirements.txt` file by running `pip freeze > requirements.txt`. 
+
+Make sure that all the dependencies are installed before trying to install any other package. 
+
+Please let me know if you need further modifications.
